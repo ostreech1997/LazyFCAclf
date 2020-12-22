@@ -1,0 +1,342 @@
+\documentclass[12t]{article}
+\usepackage{amsmath}
+\usepackage{cmap} %поиск по PDF
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{systeme}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{calc}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage{float}
+ \usepackage{booktabs}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\ttfamily\footnotesize,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+\lstset{style=mystyle}
+
+\usepackage{enumitem}
+\titleformat{\section}[block]{\color{black}\Large\bfseries\filcenter}{}{1em}{}
+\titleformat{\subsection}[hang]{\bfseries}{}{1em}{}
+\setcounter{secnumdepth}{0}
+%\renewcommand{\contentsname}{Contents}
+\author{Jacob Malyshev}
+\title{Lazy binary classifier based on Formal Concept Analysis}
+\date{}
+
+\begin{document}
+	\maketitle
+	
+	
+\section{Model}
+We represent our data sets as ordered sets $K = (C, M, I)$, where $C$ - set of objects, $M$ - set of attributes and $I$ - set of relations between $C$ and $M$. We can write $I$ in the following way:
+$$I = \{(g,m) | g \in C, m \in M, gIm \}$$. There is a target attribute in $M$ set ($m_t$). To classify new object $g \in C_{\tau}$ (there is no information about relation of this object with $m_t$ attribute)  we use the following procedure:
+\begin{enumerate}
+	\item We split our train data into two parts: $C_{+}$ - context with '+' examples, $C_{-}$ - context with '-' examples.
+	
+	$$C_{+} = \{g \in C | (g, m_t) \in I \}$$
+	$$C_{-} = \{g \in C | (g, m_t) \not \in I \}$$
+	
+	\item Take $g_{i} \in C_{\tau}$  and paste it to our classifier
+	\item Select $g_{i}^{+} \in C_{+}$ and calculate intersection of its description with the description $g_{\tau}$, that is 
+	$$\Delta_{i}^{+} = (g_{i}^{+})^{'} \cap (g_{\tau})^{'}$$
+	\item Calculate the number of object in the set $C_{-}$ for which the resulting intersection is included in the description of these objects. 
+	$$N_{i}^{+} = |\{g^{-} \in C_{-} | \Delta_{i}^{+} \subseteq (g^{-})^{'})  \}|$$
+	\item If $N^{+}$ doesn't exceed some threshold $T$, then we take this object into account and increase counter by one $NB^{+} = NB^{+} + 1$
+	\item Similarly, support for a negative decision is calculated: $NB^{-}$
+	\item Finally, our classifier predicts class of our new example using the following rule:
+	$$Class = \begin{cases} g_{\tau} \in C_{+}, & \mbox{if } NB^{+} > NB^{-} \\ g_{\tau} \in C_{-}, & \mbox{if } NB^{+} < NB^{-}  \end{cases}$$
+\end{enumerate}
+
+There is also situation, when $NB^{+} = NB^{-}$. We have several solutions:
+\begin{itemize}
+	\item Choose positive class
+	\item Choose negative class
+	\item Choose class randomly
+\end{itemize}
+In this project, we use first solution.
+
+\subsection{Some modifications}
+To improve quality of our algorithm we can add some modifications:
+\begin{itemize}
+\item Adding threshold parameter $T_{2}$, that defines min number of elements, that must be in intersection $\Delta_{i}^{+}$ (must improve time of algorithm)
+\item Scaling $NB^{+}$ and $NB^{-}$ by proportion of elements in target class (must imporve quality for unbalanced data)
+\item Use only a part of train data (must improve time, more suitable for big datasets)
+\end{itemize}
+
+\section{Datasets}
+To test our algorithms we use two datasets: 
+\begin{itemize}
+	\item Tic-Tac-Toe End game Dataset UCI (https://archive.ics.uci.edu/ml/datasets/Tic-Tac-Toe+Endgame) \\
+	
+	This database encodes the complete set of possible board configurations at the end of tic-tac-toe games, where "x" is assumed to have played first. The target concept is "win for x" (i.e., true when "x" has one of 8 possible ways to create a "three-in-a-row").\\
+
+	Number of Instances: 958 (legal tic-tac-toe endgame boards)\\
+	
+	Number of Attributes: 9, each corresponding to one tic-tac-toe square \\
+
+	Missing Attribute Values: None \\
+	
+	Class Distribution: About 65.3\% are positive (i.e., wins for "x") \\
+	
+Attribute Information:
+\begin{itemize}
+	
+\item	V1 = top-left-square: {x,o,b}
+\item   V2 = top-middle-square: {x,o,b}	
+\item	V3 = top-right-square: {x,o,b}
+\item	V4 = middle-left-square: {x,o,b}
+\item	V5 = middle-middle-square: {x,o,b}
+\item	V6 = middle-right-square: {x,o,b}
+\item	V7 = bottom-left-square: {x,o,b}
+\item	V8 = bottom-middle-square: {x,o,b}
+\item	V = bottom-right-square: {x,o,b}
+\item	V10 = Class: {positive,negative}
+
+\end{itemize}
+	
+	To work with this data we have to preprocess it with binarization technique
+	
+	\item Mushroom Classification (https://archive.ics.uci.edu/ml/datasets/mushroom)
+	
+	This dataset includes descriptions of hypothetical samples corresponding to 23 species of gilled mushrooms in the Agaricus and Lepiota Family Mushroom drawn from The Audubon Society Field Guide to North American Mushrooms (1981). Each species is identified as definitely edible, definitely poisonous, or of unknown edibility and not recommended. This latter class was combined with the poisonous one. The Guide clearly states that there is no simple rule for determining the edibility of a mushroom; no rule like "leaflets three, let it be'' for Poisonous Oak and Ivy. \\
+	
+	Number of Instances: 8124 \\
+	
+	Number of Attributes: 23 \\
+	
+	Missing Attribute Values: None \\
+	
+	Class Distribution: About 51.8\% are positive (i.e., 'e') \\
+	
+	Attribute Information:
+	\begin{itemize}
+		\item cap-shape: bell=b,conical=c,convex=x,flat=f, knobbed=k,sunken=s
+		
+		\item cap-surface: fibrous=f,grooves=g,scaly=y,smooth=s
+		
+		\item cap-color: brown=n,buff=b,cinnamon=c,gray=g,\\ green=r,pink=p,purple=u,red=e,white=w,yellow=y
+		
+		\item bruises: bruises=t,no=f
+		
+		\item odor: almond=a,anise=l,creosote=c,fishy=y,\\ foul=f,musty=m,none=n,pungent=p,spicy=s
+		
+		\item gill-attachment: attached=a,descending=d,free=f,notched=n
+		
+		\item gill-spacing: close=c,crowded=w,distant=d
+		
+		\item gill-size: broad=b,narrow=n
+		
+		\item gill-color: black=k,brown=n,buff=b,chocolate=h,gray=g, \\ green=r,orange=o,pink=p,purple=u,red=e,white=w,yellow=y
+		
+		\item stalk-shape: enlarging=e,tapering=t
+		
+		\item stalk-root: bulbous=b,club=c,cup=u,equal=e,rhizomorphs=z,rooted=r,missing=?
+		
+		\item stalk-surface-above-ring: fibrous=f,scaly=y,silky=k,smooth=s
+		
+		\item stalk-surface-below-ring: fibrous=f,scaly=y,silky=k,smooth=s
+		
+		\item stalk-color-above-ring: \\ brown=n,buff=b,cinnamon=c,gray=g,orange=o,pink=p,red=e,white=w,yellow=y
+		
+		\item stalk-color-below-ring: \\ brown=n,buff=b,cinnamon=c,gray=g,orange=o,pink=p,red=e,white=w,yellow=y
+		
+		\item veil-type: partial=p,universal=u
+		
+		\item veil-color: brown=n,orange=o,white=w,yellow=y
+		
+		\item ring-number: none=n,one=o,two=t
+		
+		\item ring-type: cobwebby=c,evanescent=e,flaring=f,\\large=l,none=n,pendant=p,sheathing=s,zone=z
+		
+		\item spore-print-color: \\ black=k,brown=n,buff=b,chocolate=h,green=r,orange=o,purple=u,white=w,yellow=y
+		
+		\item population: abundant=a,clustered=c,numerous=n,scattered=s,several=v,solitary=y
+		
+		\item habitat: grasses=g,leaves=l,meadows=m,paths=p,urban=u,waste=w,woods=d
+		
+	\end{itemize}
+	
+	It worths to say, that we test our algorithms we use only 1000 entities for time reasons.
+	
+	
+\end{itemize}
+
+\section{Python implementation}
+To realize our algorithms we use Python. We create Python module \pmb{LazyFCA.py} with the following functions:
+\begin{enumerate}
+	\item \pmb{preprocessing} - binarize our data: \\
+	\pmb{input}: df - our data, target\_column - name of target column, target\_dict - dict, which defines what class is 1 and what is 0, shuffle - bool, if True - shuffle data, otherwise shuflle is not need \\
+	\pmb{output}: df2 - binarized dataset 
+	
+	\item \pmb{LazyFCAclf} - main algorithm, which makes a prediction \\
+	\pmb{input }: C\_plus - $C_{+}$, C\_minus - $C_{-}$, new\_example - $g_{\tau}$, max\_int - $L$, min\_elems - $L_2$, balance - scaling or not, prop - proportion of train data in use.  \\
+	\pmb{output}: class prediction
+	
+	\item \pmb{Predict} - build predictions for test data
+	\pmb{input}: data\_dict - dict with $C_{+}, C_{-}, C_{\tau}$, max\_int, min\_elems, balance, prop\\
+	\pmb{output}: Y\_pred - list of predictions
+	
+	\item \pmb{cross\_validation} - estimate quality of our model using accuracy, precision, recall and ROC AUC with KFolds cross-validtation \\
+	\pmb{input} - df - preprocessed data, target\_column, Kfolds - number of folds, shuffle, model - name of model in use, model\_params - parameters of model 
+	\pmb{output}: dict of metrics 
+	
+\end{enumerate}
+
+\section{Results}
+Here I present results of 4 algorithms for two datasets:
+\begin{enumerate}
+	\item Base algorithms with only one parameter $L$ 
+	You can see results for Tic-Tac-Toe End game Dataset UCI in table \ref{tab:tab1} and for Mushroom Classification in table \ref{tab:tab2}
+	\item Base algorithm plus $L_2$ parameter
+	You can see results for Tic-Tac-Toe End game Dataset UCI in table \ref{tab:tab3} and for Mushroom Classification in table \ref{tab:tab4}
+	\item Second algorithm plus scaling
+	You can see results for Tic-Tac-Toe End game Dataset UCI in table \ref{tab:tab5} and for Mushroom Classification in table \ref{tab:tab6}
+	\item Third algorithm plus random partition of data
+	You can see results for Tic-Tac-Toe End game Dataset UCI in table \ref{tab:tab7} and for Mushroom Classification in table \ref{tab:tab8}
+\end{enumerate} 
+
+\begin{table}[H]
+\begin{tabular}{lrrrrrl}
+	\toprule
+	{} &  index &  accuracy &  precision &    recall &   ROC\_AUC &   Time \\
+	\midrule
+	0 &      0 &  0.699060 &   0.676768 &  1.000000 &  0.593220 &  04:08 \\
+	1 &      1 &  0.777429 &   0.749104 &  0.995238 &  0.676518 &  04:16 \\
+	2 &      2 &  0.787500 &   0.763441 &  0.990698 &  0.681063 &  04:17 \\
+	\bottomrule
+\end{tabular}
+	\caption{Base algorithm for Tic-Tac-Toe End game Dataset UCI  \label{tab:tab1}}
+\end{table}
+
+\begin{table}[H]
+\begin{tabular}{lrrrrrl}
+	\toprule
+	{} &  index &  accuracy &  precision &  recall &   ROC\_AUC &   Time \\
+	\midrule
+	0 &      0 &  0.990991 &   0.982249 &     1.0 &  0.991018 &  22:46 \\
+	1 &      1 &  1.000000 &   1.000000 &     1.0 &  1.000000 &  21:56 \\
+	2 &      2 &  1.000000 &   1.000000 &     1.0 &  1.000000 &  23:16 \\
+	\bottomrule
+\end{tabular}
+
+	\caption{Base algorithm for Mushroom Classification \label{tab:tab2}}
+\end{table}
+
+\begin{table}[H]
+\begin{tabular}{lrrrrrl}
+	\toprule
+	{} &  index &  accuracy &  precision &  recall &   ROC\_AUC &   Time \\
+	\midrule
+	0 &      0 &  0.739812 &   0.705674 &     1.0 &  0.654167 &  01:21 \\
+	1 &      1 &  0.824451 &   0.796364 &     1.0 &  0.720000 &  01:26 \\
+	2 &      2 &  0.765625 &   0.734982 &     1.0 &  0.665179 &  01:19 \\
+	\bottomrule
+\end{tabular}
+	\caption{Second algorithm for Tic-Tac-Toe End game Dataset UCI  \label{tab:tab3}}
+\end{table}
+
+\begin{table}[H]
+\begin{tabular}{lrrrrrl}
+	\toprule
+	{} &  index &  accuracy &  precision &  recall &   ROC\_AUC &   Time \\
+	\midrule
+	0 &      0 &  0.981982 &   0.965318 &     1.0 &  0.981928 &  03:11 \\
+	1 &      1 &  0.981982 &   0.967213 &     1.0 &  0.980769 &  03:02 \\
+	2 &      2 &  0.982036 &   0.966851 &     1.0 &  0.981132 &  03:04 \\
+	\bottomrule
+\end{tabular}
+	\caption{Second algorithm for Mushroom Classification	  \label{tab:tab4}}
+\end{table}
+
+\begin{table}[H]
+\begin{tabular}{lrrrrrl}
+	\toprule
+	{} &  index &  accuracy &  precision &    recall &   ROC\_AUC &   Time \\
+	\midrule
+	0 &      0 &  0.849530 &   0.890547 &  0.873171 &  0.840094 &  01:24 \\
+	1 &      1 &  0.833856 &   0.870968 &  0.883178 &  0.808255 &  01:35 \\
+	2 &      2 &  0.896875 &   0.922330 &  0.917874 &  0.888141 &  01:22 \\
+	\bottomrule
+\end{tabular}
+	\caption{Third algorithm for Tic-Tac-Toe End game Dataset UCI  \label{tab:tab5}}
+\end{table}
+
+
+\begin{table}[H]
+\begin{tabular}{lrrrrrl}
+	\toprule
+	{} &  index &  accuracy &  precision &    recall &   ROC\_AUC &   Time \\
+	\midrule
+	0 &      0 &  0.993994 &   0.988764 &  1.000000 &  0.993631 &  03:18 \\
+	1 &      1 &  0.987988 &   0.984043 &  0.994624 &  0.987108 &  03:15 \\
+	2 &      2 &  0.964072 &   0.934132 &  0.993631 &  0.965742 &  03:12 \\
+	\bottomrule
+\end{tabular}
+	\caption{Third algorithm for Mushroom Classification	  \label{tab:tab6}}
+\end{table}
+
+\begin{table}[H]
+\begin{tabular}{lrrrrrl}
+	\toprule
+	{} &  index &  accuracy &  precision &    recall &   ROC\_AUC &   Time \\
+	\midrule
+	0 &      0 &  0.768025 &   0.855721 &  0.792627 &  0.754157 &  00:23 \\
+	1 &      1 &  0.833856 &   0.911111 &  0.815920 &  0.840164 &  00:20 \\
+	2 &      2 &  0.762500 &   0.823529 &  0.807692 &  0.743132 &  00:21 \\
+	\bottomrule
+\end{tabular}
+	\caption{Fourth algorithm for Tic-Tac-Toe End game Dataset UCI  \label{tab:tab7}}
+\end{table}
+
+\begin{table}[H]
+\begin{tabular}{lrrrrrl}
+	\toprule
+	{} &  index &  accuracy &  precision &    recall &   ROC\_AUC &   Time \\
+	\midrule
+	0 &      0 &  0.975976 &   0.961538 &  0.994318 &  0.974866 &  00:52 \\
+	1 &      1 &  0.972973 &   0.965714 &  0.982558 &  0.972646 &  00:49 \\
+	2 &      2 &  0.985030 &   0.977011 &  0.994152 &  0.984806 &  00:49 \\
+	\bottomrule
+\end{tabular}
+	\caption{Fourth algorithm for Mushroom Classification	  \label{tab:tab8}}
+\end{table}
+
+\section{Conclusion}
+We see, that results in tabels are very different if we use different algorithms. Table \ref{tab:tab1} shows, that mean ROC AUC score for Tic-Tac-Toe dataset is near 0.65, when we use base algorithm and it takes in average about 4 minutes. The best results for this dataset is in table \ref{tab:tab5}, when we use third algorithm. ROC AUC mean is near 0.85 and time is about 1 min 30 sec. It's really great improvements in qualit and time. The quality increased mostly, because we use scaling technique for this unbalanced data. \\
+Speaking about second dataset, let's look at table \ref{tab:tab2}. We see, that ROC AUC is near 1, It's really high quality, however time is too slow: about 22 minutes for building predictions. However, let's look at table \ref{tab:tab8}, we can see that ROC AUC decreased not so much, however average time is pretty small (about 50 seconds). It's mostly because we use $L_2$ threshold.
+
+\newpage
+
+\section{Appendix}
+Full code can be found on github: https://github.com/ostreech1997/LazyFCAclf \\
+Main module: LazyFCA.py \\
+Algorithms estimation: FinalReport.ipynb
+
+\end{document}
